@@ -1,3 +1,4 @@
+import { useDispatch, useSelector } from 'react-redux';
 import { Filter } from './Filter';
 import { PhonebookForm } from './PhonebookForm';
 import { ContactList } from './contactList';
@@ -5,15 +6,19 @@ import Swal from 'sweetalert2';
 
 import { useEffect } from 'react';
 
-import { useDispatch, useSelector } from 'react-redux';
 import { setFilter } from '../redux/filterSlice';
-import { addContact, deleteContact } from '../redux/contactsSlice';
-
+import {
+  addContact,
+  deleteContact,
+  fetchContacts,
+} from '../redux/operations/operations';
 
 export const App = () => {
-  const contacts = useSelector(state => state.contacts);
-  const addDispatch = useDispatch();
-  const deleteDispatch = useDispatch();
+  const contacts = useSelector(state => state.contacts.items);
+  const dispatch = useDispatch();
+
+  const isLoading = useSelector(state => state.contacts.isLoading);
+  const error = useSelector(state => state.contacts.error);
 
   const addContactAll = dataContact => {
     if (
@@ -30,16 +35,16 @@ export const App = () => {
     }
 
     // звернення до редакс стору з записом контакту
-    addDispatch(addContact(dataContact));
+    dispatch(addContact(dataContact));
   };
-  const dispatch = useDispatch();
-  const changeFilter = ev => {
+
+   const changeFilter = ev => {
     dispatch(setFilter(ev.currentTarget.value));
   };
 
   // Видалення контакту
   const onDelateContact = id => {
-    deleteDispatch(deleteContact( id ));
+    dispatch(deleteContact(id));
   };
 
   // метод фільтрації контактів
@@ -52,22 +57,29 @@ export const App = () => {
   };
 
   // // Визначення зміни в даних і запис в сховище
+  // useEffect(() => {
+  //   localStorage.setItem('contacts', JSON.stringify(contacts));
+  // }, [contacts]);
+  // Зверненя до АРІ
   useEffect(() => {
-    localStorage.setItem('contacts', JSON.stringify(contacts));
-  }, [contacts]);
+    dispatch(fetchContacts());
+  }, [dispatch]);
 
   const visibleContacts = getVisibleContacts();
 
   return (
     <div>
-      <h1>Phonebook</h1>
-      <PhonebookForm onSubmit={addContactAll} />
-      <h2>Contacts</h2>
-      <Filter value={normalizedFilter} onChange={changeFilter} />
-      <ContactList
-        dataContacts={visibleContacts}
-        onDelateContact={onDelateContact}
-      />
+      {isLoading && !error && <b>Request in progress...</b>}
+      <div>
+        <h1>Phonebook</h1>
+        <PhonebookForm onSubmit={addContactAll} />
+        <h2>Contacts</h2>
+        <Filter value={normalizedFilter} onChange={changeFilter} />
+        <ContactList
+          dataContacts={visibleContacts}
+          onDelateContact={onDelateContact}
+        />
+      </div>
     </div>
   );
 };
